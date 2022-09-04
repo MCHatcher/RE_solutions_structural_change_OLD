@@ -1,18 +1,17 @@
-%Arbitrary announcement date T_ann, applied to:
-%Ireland (2007) NK Model, replicates Cagliarini and Kulish (2013, Fig 3)
-%To study a different example, simply change the parameters and matrices
+% Arbitrary announcement date T_ann, applied to Application 3 - Pension reform
+% Diamond (1965) model with CES utility; see Fedotenkov (2016,Econ Lett) and
+% Hatcher(2019, Econ Lett) for log utility version of the model
 %Model structures are defined in the 'Insert' files
 %Written by Michael Hatcher (m.c.hatcher@soton.ac.uk). Any errors are my own.
 
-clc; clear; close all;
+clc; clear;
 
 % Announcement date and final date before terminal structure
-T_ann = 4; T_tild = 7;
-T_sim = 15; %Simulation length
+T_ann = 4; T_tild = 4;
+T_sim = 80; %Simulation length
 
 % Model and calibration
-%run Insert_NK_forward_guidance
-run Insert_NK_inflation_target
+run Insert_pension_reform
 
 % Fixed structure solutions (Cho and Moreno 2011, JEDC)
 run Cho_and_Moreno
@@ -52,31 +51,46 @@ Omeg = Omega_tild; Gama = Gama_tild; Psi = Psi_tild;
     Psi_t(:,:,t) = Psi;
     
  end
+
+%Initial values
+X_init = [0; 0; 0; 0; 0]; 
+
+%Prepare for simulations
+X = X_init;
  
- %Prepare for simulations
- X = X_init;
- 
- %For comparison
- X_orig = X; X_fin = X_init_new; 
+%For comparison
+X_u = X_init;  %Unannounced reform
 
 %Simulation results        
 for t=1:T_sim 
+    
+        if t < T_ann
+            X = Omega_bar*X + Psi_bar;
+        end
         
-        X = Omeg_t(:,:,t)*X + Gama_t(:,:,t)*e_vec(:,t) + Psi_t(:,:,t);
+        if t >= T_ann
+            X = Omeg_t(:,:,t)*X + Psi_t(:,:,t);
+        end
         
         %Store for later
         X_stack(:,t) = X;
+       
         
-        %Under original structure
-        X_orig = Omega_bar*X_orig + Gama_bar*e_vec(:,t) + Psi_bar;
-        X_stack_orig(:,t) = X_orig;
+        if t <= T_ann
+            X_u = Omega_bar*X_u + Psi_bar;
+        end
         
-        %Under terminal structure
-        X_fin = Omega_tild*X_fin + Gama_tild*e_vec(:,t) + Psi_tild;
-        X_stack_fin(:,t) = X_fin;
+        if t > T_ann
+            X_u = Omega_tild*X_u + Psi_tild;
+        end
+        
+        Xu_stack(:,t) = X_u;
     
-        Periods(t) = t;
+        Periods(t) = t-T_ann;  %To plot from period 0
     
 end 
 
-NK_inflation_target_plotter
+Pension_reform_plotter
+
+
+

@@ -1,26 +1,27 @@
-%Arbitrary announcement date T_ann, applied to:
+%Announcement in the first period, indeterminacy example 
 %Ireland (2007) NK Model, replicates Cagliarini and Kulish (2013, Fig 3)
 %To study a different example, simply change the parameters and matrices
 %Model structures are defined in the 'Insert' files
 %Written by Michael Hatcher (m.c.hatcher@soton.ac.uk). Any errors are my own.
 
-clc; clear; close all;
+clc; clear; %close all;
 
-% Announcement date and final date before terminal structure
-T_ann = 4; T_tild = 7;
-T_sim = 15; %Simulation length
+T_tild = 8; % Final date before terminal structure
+T = 1; % Start of implementation period
+T_sim = 21; % Simulation length
+%T_sim = 51;
 
 % Model and calibration
-%run Insert_NK_forward_guidance
-run Insert_NK_inflation_target
+run Insert_NK_forward_guidance_indeterminacy
 
 % Fixed structure solutions (Cho and Moreno 2011, JEDC)
 run Cho_and_Moreno
 
 %Indicator variable    
-ind = ones(T_sim,1); ind(T_tild+1:T_sim,1) = 0;  %permanent structural change
+ind = ones(T_sim,1); ind(T_tild+1:T_sim,1) = 0; % temporary structural change
+
 %Initial values for recursion
-Omeg = Omega_tild; Gama = Gama_tild; Psi = Psi_tild;  
+Omeg = Omega_tild; Gama = Gama_tild; Psi = Psi_tild; 
 
 %Computation of matrix recursion
  for t=T_sim:-1:1       
@@ -33,18 +34,12 @@ Omeg = Omega_tild; Gama = Gama_tild; Psi = Psi_tild;
          
    Omeg = (B1t - B2t*Omeg) \ B3t; 
    Gama = (B1t - B2t*Omeg) \ B4t; 
-   Psi = (B1t - B2t*Omeg) \ (B2t*Psi + B5t);    
+   Psi = (B1t - B2t*Omeg) \ (B2t*Psi + B5t);  
         
     if t >= T_tild+1
         Omeg = Omega_tild;
         Gama = Gama_tild;
         Psi = Psi_tild;   
-    end
-    
-    if t <= T_ann-1
-        Omeg = Omega_bar;
-        Gama = Gama_bar;
-        Psi = Psi_bar;
     end
                       
     Omeg_t(:,:,t) = Omeg;
@@ -57,7 +52,7 @@ Omeg = Omega_tild; Gama = Gama_tild; Psi = Psi_tild;
  X = X_init;
  
  %For comparison
- X_orig = X; X_fin = X_init_new; 
+ X_fin = X_init;
 
 %Simulation results        
 for t=1:T_sim 
@@ -67,16 +62,15 @@ for t=1:T_sim
         %Store for later
         X_stack(:,t) = X;
         
-        %Under original structure
-        X_orig = Omega_bar*X_orig + Gama_bar*e_vec(:,t) + Psi_bar;
-        X_stack_orig(:,t) = X_orig;
-        
-        %Under terminal structure
+        %Under terminal structure (for comparison if wanted)
         X_fin = Omega_tild*X_fin + Gama_tild*e_vec(:,t) + Psi_tild;
         X_stack_fin(:,t) = X_fin;
     
-        Periods(t) = t;
+        Periods(t) = t-1;  %To plot from period 0
     
 end 
 
-NK_inflation_target_plotter
+%NK_inflation_target_plotter
+NK_forward_guidance_plotter
+
+
